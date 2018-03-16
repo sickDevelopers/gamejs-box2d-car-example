@@ -10886,3 +10886,4 @@ exports.b2DebugDraw = Box2D.Dynamics.b2DebugDraw;
 exports.b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef;
 exports.b2PrismaticJointDef = Box2D.Dynamics.Joints.b2PrismaticJointDef;
 exports.b2Transform=Box2D.Common.Math.b2Transform;
+exports.Dynamics=Box2D.Dynamics;

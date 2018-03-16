@@ -1,5 +1,5 @@
 var gamejs = require('gamejs');
-var box2d = require('./Box2dWeb-2.1.a.3');
+var Box2d = require('./Box2dWeb-2.1.a.3');
 var vectors = require('gamejs/utils/vectors');
 var math = require('gamejs/utils/math');
 
@@ -11,8 +11,8 @@ var ACC_NONE=0;
 var ACC_ACCELERATE=1;
 var ACC_BRAKE=2;
 
-var WIDTH_PX=600;   //screen width in pixels
-var HEIGHT_PX=400; //screen height in pixels
+var WIDTH_PX=1500;   //screen width in pixels
+var HEIGHT_PX=800; //screen height in pixels
 var SCALE=15;      //how many pixels in a meter
 var WIDTH_M=WIDTH_PX/SCALE; //world width in meters. for this example, world is as large as the screen
 var HEIGHT_M=HEIGHT_PX/SCALE; //world height in meters
@@ -23,10 +23,11 @@ var b2world;
 var font=new gamejs.font.Font('16px Sans-serif');
 
 //key bindings
-var BINDINGS={accelerate:gamejs.event.K_UP, 
-              brake:gamejs.event.K_DOWN,      
-              steer_left:gamejs.event.K_LEFT, 
-               steer_right:gamejs.event.K_RIGHT}; 
+console.log(gamejs.event)
+var BINDINGS={accelerate:gamejs.event.K_w, 
+              brake:gamejs.event.K_s,
+              steer_left:gamejs.event.K_a, 
+               steer_right:gamejs.event.K_d}; 
 
 
 var BoxProp = function(pars){
@@ -40,20 +41,124 @@ var BoxProp = function(pars){
     this.size=pars.size;
     
     //initialize body
-    var bdef=new box2d.b2BodyDef();
-    bdef.position=new box2d.b2Vec2(pars.position[0], pars.position[1]);
+    var bdef=new Box2d.b2BodyDef();
+    bdef.position=new Box2d.b2Vec2(pars.position[0], pars.position[1]);
     bdef.angle=0;
     bdef.fixedRotation=true;
     this.body=b2world.CreateBody(bdef);
     
     //initialize shape
-    var fixdef=new box2d.b2FixtureDef;
-    fixdef.shape=new box2d.b2PolygonShape();
+    var fixdef=new Box2d.b2FixtureDef;
+    fixdef.shape=new Box2d.b2PolygonShape();
     fixdef.shape.SetAsBox(this.size[0]/2, this.size[1]/2);
-    fixdef.restitution=0.4; //positively bouncy!
+    fixdef.restitution=0.0; //positively bouncy!
     this.body.CreateFixture(fixdef);
     return this;  
 };
+
+var ParkingLot = function(pars) {
+
+    this.size = pars.size;
+
+    var bdef=new Box2d.b2BodyDef();
+    bdef.position=new Box2d.b2Vec2(pars.position[0], pars.position[1]);
+    bdef.angle=0;
+    bdef.fixedRotation=true;
+    this.body=b2world.CreateBody(bdef);
+
+    var fixdef=new Box2d.b2FixtureDef;
+    fixdef.shape=new Box2d.b2PolygonShape();
+    fixdef.shape.SetAsBox(this.size[0]/2, this.size[1]/2);
+    fixdef.restitution=0.0; //positively bouncy!
+    fixdef.isSensor = true; 
+    this.body.CreateFixture(fixdef);
+    return this;
+}
+
+var ParkingLotRealSensor = function(pars) {
+    this.size = pars.size;
+
+    var bdef=new Box2d.b2BodyDef();
+    bdef.position=new Box2d.b2Vec2(pars.position[0], pars.position[1]);
+    bdef.angle=0;
+    bdef.fixedRotation=true;
+    this.body=b2world.CreateBody(bdef);
+    this.body.name="realParkingSensor";
+
+    var fixdef=new Box2d.b2FixtureDef;
+    fixdef.shape=new Box2d.b2PolygonShape();
+    fixdef.shape.SetAsBox(this.size[0]/2, this.size[1]/2);
+    fixdef.restitution=0.0; //positively bouncy!
+    fixdef.isSensor = true; 
+    fixdef.name="realParkingSensor";
+    this.body.CreateFixture(fixdef);
+    return this;
+}
+
+var Giopego = function(pars) {
+    this.size = pars.size;
+
+    var bdef=new Box2d.b2BodyDef();
+    bdef.position=new Box2d.b2Vec2(pars.position[0], pars.position[1]);
+    bdef.angle=0;
+    bdef.fixedRotation=true;
+    bdef.type = Box2d.b2Body.b2_dynamicBody;
+    this.body=b2world.CreateBody(bdef);
+    this.body.name="giopego";
+
+    var fixdef=new Box2d.b2FixtureDef;
+    fixdef.shape=new Box2d.b2CircleShape(pars.radius);
+    // fixdef.shape.SetAsBox(this.size[0]/2, this.size[1]/2);
+    // fixdef.restitution=0.0; //positively bouncy!
+    // fixdef.isSensor = true; 
+    // fixdef.name="giopego";
+    this.body.CreateFixture(fixdef);
+
+
+    var fixFov = new Box2d.b2FixtureDef;
+    var fovDef = new Box2d.b2BodyDef;
+    
+    fixFov.shape = new Box2d.b2PolygonShape;
+    fixFov.shape.SetAsArray([
+        new Box2d.b2Vec2(0, 0),
+        new Box2d.b2Vec2(15, -10),
+        new Box2d.b2Vec2(15, 10),
+    ])
+
+    fovDef.type = Box2d.b2Body.b2_dynamicBody;
+    fovDef.position.x = pars.position[0];
+    fovDef.position.y = pars.position[1];
+
+    fixFov.isSensor = true;
+    this.fovBody = b2world.CreateBody(fovDef)
+    this.fovBody.CreateFixture(fixFov);
+    this.fovBody.name = 'fov';
+
+    return this;
+}
+
+var tickIndex = 0;
+var ang = Math.random();
+
+Giopego.prototype.move = function() {
+    var cp = this.body.GetPosition();
+
+    var force = new Box2d.b2Vec2(1, -0.6);
+    var position = this.fovBody.GetWorldCenter();
+    
+    if (tickIndex > 20) {
+        ang = Math.random() > 0.5 ? Math.random() : -Math.random();
+        tickIndex = 0;
+    }
+
+    tickIndex++;
+
+    this.body.SetLinearVelocity(force);
+    this.body.SetAngularVelocity(ang);
+
+    this.fovBody.SetPosition(this.body.GetPosition());
+    this.fovBody.SetAngularVelocity(ang);
+}
 
 function Wheel(pars){
     /*
@@ -76,28 +181,28 @@ function Wheel(pars){
     this.powered=pars.powered;
 
     //initialize body
-    var def=new box2d.b2BodyDef();
-    def.type = box2d.b2Body.b2_dynamicBody;
-    def.position=this.car.body.GetWorldPoint(new box2d.b2Vec2(this.position[0], this.position[1]));
+    var def=new Box2d.b2BodyDef();
+    def.type = Box2d.b2Body.b2_dynamicBody;
+    def.position=this.car.body.GetWorldPoint(new Box2d.b2Vec2(this.position[0], this.position[1]));
     def.angle=this.car.body.GetAngle();
     this.body=b2world.CreateBody(def);
     
     //initialize shape
-    var fixdef= new box2d.b2FixtureDef;
+    var fixdef= new Box2d.b2FixtureDef;
     fixdef.density=1;
     fixdef.isSensor=true; //wheel does not participate in collision calculations: resulting complications are unnecessary
-    fixdef.shape=new box2d.b2PolygonShape();
+    fixdef.shape=new Box2d.b2PolygonShape();
     fixdef.shape.SetAsBox(pars.width/2, pars.length/2);
     this.body.CreateFixture(fixdef);
 
     //create joint to connect wheel to body
     if(this.revolving){
-        var jointdef=new box2d.b2RevoluteJointDef();
+        var jointdef=new Box2d.b2RevoluteJointDef();
         jointdef.Initialize(this.car.body, this.body, this.body.GetWorldCenter());
         jointdef.enableMotor=false; //we'll be controlling the wheel's angle manually
     }else{
-        var jointdef=new box2d.b2PrismaticJointDef();
-        jointdef.Initialize(this.car.body, this.body, this.body.GetWorldCenter(), new box2d.b2Vec2(1, 0));
+        var jointdef=new Box2d.b2PrismaticJointDef();
+        jointdef.Initialize(this.car.body, this.body, this.body.GetWorldCenter(), new Box2d.b2Vec2(1, 0));
         jointdef.enableLimit=true;
         jointdef.lowerTranslation=jointdef.upperTranslation=0;
     }
@@ -117,7 +222,7 @@ Wheel.prototype.setAngle=function(angle){
 Wheel.prototype.getLocalVelocity=function(){
     /*returns get velocity vector relative to car
     */
-    var res=this.car.body.GetLocalVector(this.car.body.GetLinearVelocityFromLocalPoint(new box2d.b2Vec2(this.position[0], this.position[1])));
+    var res=this.car.body.GetLocalVector(this.car.body.GetLinearVelocityFromLocalPoint(new Box2d.b2Vec2(this.position[0], this.position[1])));
     return [res.x, res.y];
 };
 
@@ -144,7 +249,7 @@ Wheel.prototype.killSidewaysVelocity=function(){
     removes all sideways velocity from this wheels velocity
     */
     var kv=this.getKillVelocityVector();
-    this.body.SetLinearVelocity(new box2d.b2Vec2(kv[0], kv[1]));
+    this.body.SetLinearVelocity(new Box2d.b2Vec2(kv[0], kv[1]));
 
 };
 
@@ -178,21 +283,22 @@ function Car(pars){
                        //when steering left/right, angle will be decreased/increased gradually over 200ms to prevent jerkyness.
     
     //initialize body
-    var def=new box2d.b2BodyDef();
-    def.type = box2d.b2Body.b2_dynamicBody;
-    def.position=new box2d.b2Vec2(pars.position[0], pars.position[1]);
+    var def=new Box2d.b2BodyDef();
+    def.type = Box2d.b2Body.b2_dynamicBody;
+    def.position=new Box2d.b2Vec2(pars.position[0], pars.position[1]);
     def.angle=math.radians(pars.angle); 
     def.linearDamping=0.15;  //gradually reduces velocity, makes the car reduce speed slowly if neither accelerator nor brake is pressed
     def.bullet=true; //dedicates more time to collision detection - car travelling at high speeds at low framerates otherwise might teleport through obstacles.
     def.angularDamping=0.3;
     this.body=b2world.CreateBody(def);
+    this.body.name="car";
     
     //initialize shape
-    var fixdef= new box2d.b2FixtureDef();
+    var fixdef= new Box2d.b2FixtureDef();
     fixdef.density = 1.0;
     fixdef.friction = 0.3; //friction when rubbing agaisnt other shapes
     fixdef.restitution = 0.4;  //amount of force feedback when hitting something. >0 makes the car bounce off, it's fun!
-    fixdef.shape=new box2d.b2PolygonShape;
+    fixdef.shape=new Box2d.b2PolygonShape;
     fixdef.shape.SetAsBox(pars.width/2, pars.length/2);
     this.body.CreateFixture(fixdef);
     
@@ -221,7 +327,7 @@ Car.prototype.getLocalVelocity=function(){
     /*
     returns car's velocity vector relative to the car
     */
-    var retv=this.body.GetLocalVector(this.body.GetLinearVelocityFromLocalPoint(new box2d.b2Vec2(0, 0)));
+    var retv=this.body.GetLocalVector(this.body.GetLinearVelocityFromLocalPoint(new Box2d.b2Vec2(0, 0)));
     return [retv.x, retv.y];
 };
 
@@ -248,7 +354,7 @@ Car.prototype.setSpeed=function(speed){
     */
     var velocity=this.body.GetLinearVelocity();
     velocity=vectors.unit([velocity.x, velocity.y]);
-    velocity=new box2d.b2Vec2(velocity[0]*((speed*1000.0)/3600.0),
+    velocity=new Box2d.b2Vec2(velocity[0]*((speed*1000.0)/3600.0),
                               velocity[1]*((speed*1000.0)/3600.0));
     this.body.SetLinearVelocity(velocity);
 
@@ -305,7 +411,7 @@ Car.prototype.update=function(msDuration){
         wheels=this.getPoweredWheels();
         for(i=0;i<wheels.length;i++){
            var position=wheels[i].body.GetWorldCenter();
-           wheels[i].body.ApplyForce(wheels[i].body.GetWorldVector(new box2d.b2Vec2(fvect[0], fvect[1])), position );
+           wheels[i].body.ApplyForce(wheels[i].body.GetWorldVector(new Box2d.b2Vec2(fvect[0], fvect[1])), position );
         }
         
         //if going very slow, stop - to prevent endless sliding
@@ -324,23 +430,52 @@ function main(){
     var display = gamejs.display.setMode([WIDTH_PX, HEIGHT_PX]);
     
     //SET UP B2WORLD
-    b2world=new box2d.b2World(new box2d.b2Vec2(0, 0), false);
+    b2world=new Box2d.b2World(new Box2d.b2Vec2(0, 0), false);
     
-    //set up box2d debug draw to draw the bodies for us.
+    //set up Box2d debug draw to draw the bodies for us.
     //in a real game, car will propably be drawn as a sprite rotated by the car's angle
-    var debugDraw = new box2d.b2DebugDraw();
+    var debugDraw = new Box2d.b2DebugDraw();
     debugDraw.SetSprite(display._canvas.getContext("2d"));
     debugDraw.SetDrawScale(SCALE);
     debugDraw.SetFillAlpha(0.5);
     debugDraw.SetLineThickness(1.0);
-    debugDraw.SetFlags(box2d.b2DebugDraw.e_shapeBit);
+    debugDraw.SetFlags(Box2d.b2DebugDraw.e_shapeBit);
     b2world.SetDebugDraw(debugDraw);
+
+    console.log(Box2d)
+
+    var listener = new Box2d.Dynamics.b2ContactListener;
+    listener.BeginContact = function(contact) {
+        
+        var bodyAName = contact.m_fixtureA.GetBody().name;
+        var bodyBName = contact.m_fixtureB.GetBody().name;
+
+        if (
+            bodyAName === 'car' && bodyBName === 'realParkingSensor' || 
+            bodyAName === 'realParkingSensor' && bodyBName === 'car'
+        ) {
+            alert('Anche oggi hai parcheggiato dentro, alla facciazza di Giopego!')
+        }
+
+        if (
+            bodyAName === 'car' && bodyBName === 'fov' || 
+            bodyAName === 'fov' && bodyBName === 'car'
+        ) {
+            alert('Giopego says: "Non è il tuo turno per parcheggiare dento! Lo dirò al people team! Mi piace il cazzo!"')
+        }
+
+    }
+    // listener.EndContact = function(contact) {
+    //     console.log(contact)
+    // }
+
+    b2world.SetContactListener(listener);
     
     //initialize car
     var car=new Car({'width':2,
                     'length':4,
-                    'position':[10, 10],
-                    'angle':180, 
+                    'position':[10, 40],
+                    'angle':0, 
                     'power':60,
                     'max_steer_angle':20,
                     'max_speed':60,
@@ -351,6 +486,8 @@ function main(){
     
     //initialize some props to bounce against
     var props=[];
+
+    var center=[WIDTH_M/2 + 10, HEIGHT_M/2];
     
     //outer walls
     props.push(new BoxProp({'size':[WIDTH_M, 1],    'position':[WIDTH_M/2, 0.5]}));
@@ -358,11 +495,36 @@ function main(){
     props.push(new BoxProp({'size':[WIDTH_M, 1],    'position':[WIDTH_M/2, HEIGHT_M-0.5]}));
     props.push(new BoxProp({'size':[1, HEIGHT_M-2], 'position':[WIDTH_M-0.5, HEIGHT_M/2]}));
     
-    //pen in the center
-    var center=[WIDTH_M/2, HEIGHT_M/2];
-    props.push(new BoxProp({'size':[1, 6], 'position':[center[0]-3, center[1]]}));
-    props.push(new BoxProp({'size':[1, 6], 'position':[center[0]+3, center[1]]}));
-    props.push(new BoxProp({'size':[5, 1], 'position':[center[0], center[1]+2.5]}));
+    props.push(new BoxProp({'size':[3, 5], 'position':[20, 10]}));
+    props.push(new BoxProp({'size':[3, 5], 'position':[25, 10]}));
+    props.push(new BoxProp({'size':[3, 5], 'position':[30, 10]}));
+    
+    // parcheggi pieni
+    props.push(new BoxProp({'size':[3, 5], 'position':[center[0]-8, center[1]]}));
+    props.push(new BoxProp({'size':[3, 5], 'position':[center[0] + 2, center[1]]}));
+    props.push(new BoxProp({'size':[3, 5], 'position':[center[0] + 6, center[1]]}));
+    props.push(new BoxProp({'size':[3, 5], 'position':[center[0] + 10, center[1]]}));
+
+    props.push(new ParkingLot({'size':[4, 6], 'position':[center[0]-3, center[1]]}));
+    props.push(new ParkingLotRealSensor({'size':[1, 1], 'position':[center[0]-3, center[1]+2]}));
+
+    // interlogica
+    props.push(new BoxProp({'size':[30, 15], 'position':[30, center[1] + 12]}));
+
+    // venetwork
+    props.push(new BoxProp({'size':[30, 15], 'position':[center[0] + 6, center[1] -20]}));
+
+    // aiuole
+    props.push(new BoxProp({'size':[1, 5], 'position':[20, center[1]]}));
+    props.push(new BoxProp({'size':[15, 1], 'position':[30, center[1] - 2]}));
+
+
+    var giopego = new Giopego({radius: 0.5, 'position':[40, center[1]+2]})
+    props.push(giopego);
+    
+    // props.push(new BoxProp({'size':[1, 6], 'position':[center[0]-3, center[1]]}));
+    // props.push(new BoxProp({'size':[1, 6], 'position':[center[0]+3, center[1]]}));
+    // props.push(new BoxProp({'size':[5, 1], 'position':[center[0], center[1]+2.5]}));
     
     function tick(msDuration) {
         //GAME LOOP
@@ -386,6 +548,8 @@ function main(){
         
         //update car
         car.update(msDuration);
+
+        giopego.move();
         
         //update physics world
         b2world.Step(msDuration/1000, 10, 8);        
@@ -396,7 +560,7 @@ function main(){
         //fill background
         gamejs.draw.rect(display, '#FFFFFF', new gamejs.Rect([0, 0], [WIDTH_PX, HEIGHT_PX]),0)
         
-        //let box2d draw it's bodies
+        //let Box2d draw it's bodies
         b2world.DrawDebugData();
         
         //fps and car speed display
