@@ -5,4 +5,6 @@ app.use(express.static('public'));
 
 // app.get('/', (req, res) => res.send('Hello World!'))
 
-app.listen(8080, () => console.log('Giopego on port 80'))
+const port = process.env.PORT || 8080;
+
+app.listen(port, () => console.log('Giopego on port 80'))
