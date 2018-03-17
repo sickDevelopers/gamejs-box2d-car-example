@@ -1,0 +1,23 @@
+{
+  "name": "giopark",
+  "version": "1.0.0",
+  "description": "GIOPEGO!!!!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sickDevelopers/giopark.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sickDevelopers/giopark/issues"
+  },
+  "homepage": "https://github.com/sickDevelopers/giopark#readme",
+  "dependencies": {
+    "express": "^4.16.3"
+  }
+}
